@@ -1,6 +1,7 @@
 # main.py
 
 import mysql.connector
+from datetime import datetime
 
 def connect_db():
     return mysql.connector.connect(
@@ -47,7 +48,27 @@ def follow_laundry(username):
     conn = connect_db()
     cursor = conn.cursor()
     
-    laundry = input("Masukkan nama laundry yang ingin diikuti: ")
+    cursor.execute('SELECT * FROM laundry_options')
+    laundry_options = cursor.fetchall()
+    
+    if not laundry_options:
+        print("Tidak ada laundry tersedia.")
+        conn.close()
+        return
+    
+    print("Pilih laundry yang ingin diikuti:")
+    for idx, option in enumerate(laundry_options, start=1):
+        print(f"{idx}. {option[1]}")
+    
+    pilihan = int(input("Masukkan pilihan (nomor): "))
+    
+    if 1 <= pilihan <= len(laundry_options):
+        laundry = laundry_options[pilihan - 1][1]
+    else:
+        print("Pilihan tidak valid.")
+        conn.close()
+        return
+    
     cursor.execute('INSERT INTO subscriptions (username, laundry) VALUES (%s, %s)', (username, laundry))
     conn.commit()
     conn.close()
@@ -61,8 +82,9 @@ def kirim_pesanan(username):
     jenis_laundry = input("Pilih jenis laundry (Hemat, Reguler, Ekspres): ")
     harga = hitung_harga(berat_cucian, jenis_laundry)
     estimasi = estimasi_waktu(jenis_laundry)
-    cursor.execute('INSERT INTO orders (username, berat, jenis, harga, estimasi) VALUES (%s, %s, %s, %s, %s)', 
-              (username, berat_cucian, jenis_laundry, harga, estimasi))
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute('INSERT INTO orders (username, berat, jenis, harga, estimasi, timestamp) VALUES (%s, %s, %s, %s, %s, %s)', 
+              (username, berat_cucian, jenis_laundry, harga, estimasi, timestamp))
     conn.commit()
     conn.close()
     return jenis_laundry, harga, estimasi
@@ -111,9 +133,10 @@ def pubLaundry():
         jenis_laundry = order[3]
         harga = order[4]
         estimasi = order[5]
+        timestamp = order[6]
         if estimasi:
-            client.publish("laundry", f"Pengguna {username} memilih layanan {jenis_laundry} dengan berat cucian {berat} kg, harga {harga} IDR, dan estimasi waktu {estimasi} hari.")
-            print(f"Pesan dikirim: Pengguna {username} memilih layanan {jenis_laundry} dengan berat cucian {berat} kg, harga {harga} IDR, dan estimasi waktu {estimasi} hari.")
+            client.publish("laundry", f"Pengguna {username} memilih layanan {jenis_laundry} dengan berat cucian {berat} kg, harga {harga} IDR, dan estimasi waktu {estimasi} hari. Waktu pemesanan: {timestamp}.")
+            print(f"Pesan dikirim: Pengguna {username} memilih layanan {jenis_laundry} dengan berat cucian {berat} kg, harga {harga} IDR, dan estimasi waktu {estimasi} hari. Waktu pemesanan: {timestamp}.")
     
     client.loop_stop()
     conn.close()

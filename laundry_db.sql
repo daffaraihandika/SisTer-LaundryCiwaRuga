@@ -20,5 +20,13 @@ CREATE TABLE orders (
     berat FLOAT,
     jenis VARCHAR(255),
     harga FLOAT,
-    estimasi INT
+    estimasi INT,
+    timestamp DATETIME
 );
+
+CREATE TABLE laundry_options (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) UNIQUE
+);
+
+INSERT INTO laundry_options (name) VALUES ('Ciwa'), ('Ruga');
