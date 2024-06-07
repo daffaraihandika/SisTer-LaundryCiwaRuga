@@ -56,11 +56,14 @@ def process_orders(laundry_name):
         cursor.execute('UPDATE orders SET status=%s WHERE id=%s', ('in progress', order_id))
         conn.commit()
 
+        # Publish order update to synchronize with client
+        client.publish("order_updates", f"{order_id},{username},{order[2]},{order[3]},{order[4]},{estimasi},{order[6]},{laundry_name},in progress")
+    
     conn.close()
 
 def main():
-    # broker_address = "192.168.1.33"  # address of the broker
-    broker_address = "localhost"  # address of the broker
+    broker_address = "192.168.1.26"  # address of the broker
+    # broker_address = "localhost"  # address of the broker
     print("creating new instance")
     global client
     client = mqtt.Client(client_id="Laundry Service", protocol=mqtt.MQTTv311)

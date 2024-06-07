@@ -43,6 +43,10 @@ def registrasi():
     conn.commit()
     conn.close()
     print("Registrasi berhasil.")
+
+    # Publish user registration to synchronize with server
+    client.publish("user_updates", f"{username},{password},new")
+
     return username
 
 def autentikasi():
@@ -95,6 +99,9 @@ def follow_laundry(username):
         conn.commit()
         print(f"{username} mengikuti {laundry}")
         client.subscribe(f"{laundry}/{username}")
+
+        # Publish subscription to synchronize with server
+        client.publish("subscription_updates", f"{username},{laundry},new")
     elif pilihan == len(laundry_options) + 1:
         print("Anda memilih untuk tidak mengikuti laundry manapun.")
     else:
@@ -175,6 +182,9 @@ def kirim_pesanan(username):
     print(f"Pesanan ke {pilihan_laundry.capitalize()} telah dikirim. Estimasi waktu selesai: {estimasi} hari. Harga: {harga} IDR.")
     client.publish(f"{pilihan_laundry}/{username}", f"Pesanan Anda ke {pilihan_laundry.capitalize()} telah diterima. Estimasi waktu selesai: {estimasi} hari. Harga: {harga} IDR.")
 
+    # Publish order to synchronize with server
+    client.publish("order_updates", f"{username},{berat_cucian},{jenis_laundry},{harga},{estimasi},{timestamp},{pilihan_laundry},new")
+
 def hitung_harga(berat, jenis_laundry):
     if jenis_laundry == "hemat":
         return berat * 5000  # harga per kg untuk Hemat
@@ -187,8 +197,8 @@ def hitung_harga(berat, jenis_laundry):
         return None
 
 def main():
-    # broker_address = "192.168.1.33"  # address of the broker
-    broker_address = "localhost"  # address of the broker
+    broker_address = "192.168.1.26"  # address of the broker
+    # broker_address = "localhost"  # address of the broker
     print("creating new instance")
     global client
     client = mqtt.Client(client_id="Client 1", protocol=mqtt.MQTTv311)
@@ -211,6 +221,8 @@ def main():
     kirim_pesanan(username)
 
     client.subscribe("order_updates")
+    client.subscribe("user_updates")
+    client.subscribe("subscription_updates")
 
     print("Subscribed to laundry notifications and order updates")
 
