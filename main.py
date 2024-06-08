@@ -62,7 +62,7 @@ def process_orders(laundry_name):
     conn.close()
 
 def main():
-    broker_address = "192.168.1.26"  # address of the broker
+    broker_address = "192.168.1.33"  # address of the broker
     # broker_address = "localhost"  # address of the broker
     print("creating new instance")
     global client

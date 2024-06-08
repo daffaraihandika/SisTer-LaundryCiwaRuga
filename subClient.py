@@ -1,3 +1,4 @@
+import logging
 import paho.mqtt.client as mqtt
 import time
 import mysql.connector
@@ -13,18 +14,23 @@ def connect_db():
 
 def on_message(client, userdata, message):
     payload = str(message.payload.decode('utf-8'))
-    print(f"Message received: {payload}")
     
+    data = payload.split(',')
+    logging.debug(f"Data split: {data}")
+
+    # Memastikan jumlah elemen sesuai untuk berbagai jenis pesan
     if message.topic == "order_updates":
-        data = payload.split(',')
-        order_id, username, berat, jenis, harga, estimasi, timestamp, laundry, status = data
-        conn = connect_db()
-        cursor = conn.cursor()
-        
-        cursor.execute('INSERT INTO orders (id, username, berat, jenis, harga, estimasi, timestamp, laundry, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE username=%s, berat=%s, jenis=%s, harga=%s, estimasi=%s, timestamp=%s, laundry=%s, status=%s', 
-                       (order_id, username, berat, jenis, harga, estimasi, timestamp, laundry, status, username, berat, jenis, harga, estimasi, timestamp, laundry, status))
-        conn.commit()
-        conn.close()
+        if len(data) == 8:
+            username, berat, jenis, harga, estimasi, timestamp, laundry, status = data
+            conn = connect_db()
+            cursor = conn.cursor()
+            
+            cursor.execute('INSERT INTO orders (username, berat, jenis, harga, estimasi, timestamp, laundry, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE username=%s, berat=%s, jenis=%s, harga=%s, estimasi=%s, timestamp=%s, laundry=%s, status=%s', 
+                           (username, berat, jenis, harga, estimasi, timestamp, laundry, status, username, berat, jenis, harga, estimasi, timestamp, laundry, status))
+            conn.commit()
+            conn.close()
+        else:
+            logging.error(f"Data length mismatch for order_updates. Expected 8, got {len(data)}")
 
 def registrasi():
     conn = connect_db()
@@ -164,7 +170,7 @@ def kirim_pesanan(username):
     pilihan = int(input("Masukkan pilihan laundry (nomor): "))
     
     if 1 <= pilihan <= len(estimasi_waktu_list):
-        pilihan_laundry = estimasi_waktu_list[pilihan - 1][0].lower()
+        pilihan_laundry = estimasi_waktu_list[pilihan - 1][0]
         estimasi = estimasi_waktu_list[pilihan - 1][1]
     else:
         print("Pilihan tidak valid.")
@@ -197,8 +203,8 @@ def hitung_harga(berat, jenis_laundry):
         return None
 
 def main():
-    broker_address = "192.168.1.26"  # address of the broker
-    # broker_address = "localhost"  # address of the broker
+    # broker_address = "192.168.1.33"  # address of the broker
+    broker_address = "localhost"  # address of the broker
     print("creating new instance")
     global client
     client = mqtt.Client(client_id="Client 1", protocol=mqtt.MQTTv311)
