@@ -13,6 +13,7 @@ def connect_db():
 
 def on_message(client, userdata, message):
     payload = str(message.payload.decode('utf-8'))
+    logging.debug(f"Message received: {message.topic} -> {message.payload.decode()}")
     print(f"Message received: {payload}")
     
     if message.topic == "order_updates":
