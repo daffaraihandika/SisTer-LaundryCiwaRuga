@@ -204,7 +204,7 @@ def hitung_harga(berat, jenis_laundry):
 
 def main():
     # broker_address = "192.168.1.33"  # address of the broker
-    broker_address = "localhost"  # address of the broker
+    broker_address = "192.168.1.33"  # address of the broker
     print("creating new instance")
     global client
     client = mqtt.Client(client_id="Client 1", protocol=mqtt.MQTTv311)
