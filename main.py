@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 
 logging.basicConfig(level=logging.DEBUG)
 
+# Fungsi untuk menghubungkan ke database
 def connect_db():
     return mysql.connector.connect(
         host="localhost",
@@ -13,6 +14,7 @@ def connect_db():
         database="laundry_db"
     )
 
+# Fungsi yang dipanggil setiap kali pesan diterima
 def on_message(client, userdata, message):
     payload = str(message.payload.decode('utf-8'))
     # print(f"Message received: {payload}")
@@ -45,7 +47,7 @@ def on_message(client, userdata, message):
     elif message.topic == "order_updates":
         if len(data) == 8:
             username, berat, jenis, harga, estimasi, timestamp, laundry, status = data
-            if laundry == selected_laundry:  # Only process orders for the selected laundry
+            if laundry == selected_laundry:  # Hanya memproses pesanan untuk laundry yang dipilih
                 cursor.execute('INSERT INTO orders (username, berat, jenis, harga, estimasi, timestamp, laundry, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE username=%s, berat=%s, jenis=%s, harga=%s, estimasi=%s, timestamp=%s, laundry=%s, status=%s', 
                                (username, berat, jenis, harga, estimasi, timestamp, laundry, status, username, berat, jenis, harga, estimasi, timestamp, laundry, status))
                 conn.commit()
@@ -54,6 +56,7 @@ def on_message(client, userdata, message):
 
     conn.close()
 
+# Fungsi untuk autentikasi laundry yang dipilih
 def autentikasi_laundry():
     laundry_name = input("Masukkan nama laundry (Laundry Ciwa/Laundry Ruga): ").strip()
     if laundry_name in ["Laundry Ciwa", "Laundry Ruga"]:
@@ -62,6 +65,7 @@ def autentikasi_laundry():
         print("Nama laundry tidak valid.")
         return None
 
+# Fungsi untuk mengirim informasi penjemputan ke klien
 def kirim_info_penjemputan(laundry_name, username):
     conn = connect_db()
     cursor = conn.cursor()
@@ -73,16 +77,19 @@ def kirim_info_penjemputan(laundry_name, username):
 
     conn.close()
 
+# Fungsi untuk mengirim informasi pengantaran ke klien
 def kirim_info_pengantaran(laundry_name, username, estimasi):
     waktu_pengantaran = (datetime.now() + timedelta(days=estimasi)).strftime('%Y-%m-%d %H:%M:%S')
     pesan = f"{laundry_name.capitalize()} akan mengantarkan baju hasil laundry pada {waktu_pengantaran}."
     client.publish(f"{laundry_name}/{username}", pesan)
     print(f"Pesan dikirim ke {username}: {pesan}")
 
+# Fungsi untuk memproses pesanan untuk laundry yang dipilih
 def process_orders(laundry_name):
     conn = connect_db()
     cursor = conn.cursor()
 
+    # Mengambil semua pesanan baru untuk laundry yang dipilih
     cursor.execute('SELECT * FROM orders WHERE laundry=%s AND status=%s', (laundry_name, 'new'))
     orders = cursor.fetchall()
     # print(orders)
@@ -96,8 +103,11 @@ def process_orders(laundry_name):
         order_id = order[0]
         username = order[1]
         estimasi = order[5]
+        # Mengirim informasi penjemputan dan pengantaran ke klien
         kirim_info_penjemputan(laundry_name, username)
         kirim_info_pengantaran(laundry_name, username, estimasi)
+        
+        # Mengupdate status pesanan menjadi 'in progress'
         cursor.execute('UPDATE orders SET status=%s WHERE id=%s', ('in progress', order_id))
         conn.commit()
         

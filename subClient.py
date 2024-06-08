@@ -4,6 +4,7 @@ import time
 import mysql.connector
 from datetime import datetime
 
+# Fungsi untuk menghubungkan ke database
 def connect_db():
     return mysql.connector.connect(
         host="localhost",
@@ -12,6 +13,7 @@ def connect_db():
         database="laundry_db"
     )
 
+# Fungsi yang dipanggil setiap kali pesan diterima
 def on_message(client, userdata, message):
     payload = str(message.payload.decode('utf-8'))
     
@@ -32,6 +34,7 @@ def on_message(client, userdata, message):
         else:
             logging.error(f"Data length mismatch for order_updates. Expected 8, got {len(data)}")
 
+# Fungsi untuk registrasi pengguna baru
 def registrasi():
     conn = connect_db()
     cursor = conn.cursor()
@@ -55,6 +58,7 @@ def registrasi():
 
     return username
 
+# Fungsi untuk autentikasi pengguna
 def autentikasi():
     conn = connect_db()
     cursor = conn.cursor()
@@ -72,6 +76,7 @@ def autentikasi():
         conn.close()
         return None
 
+# Fungsi untuk mengikuti laundry tertentu
 def follow_laundry(username):
     conn = connect_db()
     cursor = conn.cursor()
@@ -115,6 +120,7 @@ def follow_laundry(username):
     
     conn.close()
 
+# Fungsi untuk mendapatkan estimasi waktu untuk jenis laundry tertentu
 def get_estimasi_waktu(username, jenis_laundry):
     conn = connect_db()
     cursor = conn.cursor()
@@ -132,6 +138,7 @@ def get_estimasi_waktu(username, jenis_laundry):
     
     return laundry_options
 
+# Fungsi untuk mengirim pesanan laundry
 def kirim_pesanan(username):
     conn = connect_db()
     cursor = conn.cursor()
@@ -191,6 +198,7 @@ def kirim_pesanan(username):
     # Publish order to synchronize with server
     client.publish("order_updates", f"{username},{berat_cucian},{jenis_laundry},{harga},{estimasi},{timestamp},{pilihan_laundry},new")
 
+# Fungsi untuk menghitung harga berdasarkan berat dan jenis laundry
 def hitung_harga(berat, jenis_laundry):
     if jenis_laundry == "hemat":
         return berat * 5000  # harga per kg untuk Hemat
@@ -203,7 +211,6 @@ def hitung_harga(berat, jenis_laundry):
         return None
 
 def main():
-    # broker_address = "192.168.1.33"  # address of the broker
     broker_address = "192.168.1.33"  # address of the broker
     print("creating new instance")
     global client
